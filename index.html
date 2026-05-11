@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Chromarchy Calibration</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100vw; height: 100vh; overflow: hidden; background: #000; }
+
+    #idle {
+      display: flex; align-items: center; justify-content: center;
+      width: 100%; height: 100%; background: #08090F;
+      font-family: -apple-system, sans-serif; color: rgba(242,240,237,0.55);
+      font-size: 2.4vw; letter-spacing: 0.08em; text-transform: uppercase;
+    }
+
+    #aruco-canvas {
+      display: none; width: 100%; height: 100%;
+      position: absolute; top: 0; left: 0;
+    }
+
+    #patch {
+      display: none; width: 100%; height: 100%;
+      position: absolute; top: 0; left: 0;
+    }
+  </style>
+</head>
+<body>
+  <div id="idle">Chromarchy · Calibrating</div>
+  <canvas id="aruco-canvas"></canvas>
+  <div id="patch"></div>
+
+  <script src="https://www.gstatic.com/cast/sdk/libs/caf_receiver/v3/cast_receiver_framework.js"></script>
+  <script>
+    'use strict';
+
+    const MARKERS = {
+      0: [[1,0,0,0,0],[1,0,1,1,1],[0,1,0,0,1],[1,0,1,1,1],[1,0,0,0,0]],
+      1: [[1,0,1,0,0],[1,0,1,1,1],[0,0,0,0,1],[1,0,1,1,1],[1,0,1,0,0]],
+      2: [[0,1,1,0,0],[0,1,0,0,0],[1,1,0,0,1],[0,1,0,0,0],[0,1,1,0,0]],
+      3: [[0,1,0,0,0],[0,1,0,0,0],[1,0,0,0,1],[0,1,0,0,0],[0,1,0,0,0]],
+    };
+
+    const POSITIONS = [
+      { id: 0, x: 0.05, y: 0.05 },
+      { id: 1, x: 0.85, y: 0.05 },
+      { id: 2, x: 0.85, y: 0.773 },
+      { id: 3, x: 0.05, y: 0.773 },
+    ];
+
+    const MARKER_FRAC = 0.10;
+
+    function drawMarker(ctx, id, cx, cy, size) {
+      const inner = MARKERS[id];
+      const cell = size / 7;
+      const ox = cx - size / 2;
+      const oy = cy - size / 2;
+
+      ctx.fillStyle = '#000';
+      ctx.fillRect(ox, oy, size, size);
+
+      for (let r = 0; r < 5; r++) {
+        for (let c = 0; c < 5; c++) {
+          ctx.fillStyle = inner[r][c] ? '#000' : '#fff';
+          ctx.fillRect(ox + (c + 1) * cell, oy + (r + 1) * cell, cell, cell);
+        }
+      }
+    }
+
+    function showAruco() {
+      const canvas = document.getElementById('aruco-canvas');
+      const W = window.innerWidth;
+      const H = window.innerHeight;
+      canvas.width = W;
+      canvas.height = H;
+      canvas.style.display = 'block';
+      document.getElementById('idle').style.display = 'none';
+      document.getElementById('patch').style.display = 'none';
+
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, W, H);
+
+      const mSize = Math.round(W * MARKER_FRAC);
+      for (const p of POSITIONS) {
+        drawMarker(ctx, p.id, p.x * W + mSize / 2, p.y * H + mSize / 2, mSize);
+      }
+    }
+
+    function showPatch(color) {
+      document.getElementById('aruco-canvas').style.display = 'none';
+      document.getElementById('idle').style.display = 'none';
+      const patch = document.getElementById('patch');
+      patch.style.display = 'block';
+      patch.style.backgroundColor = color;
+    }
+
+    function showIdle() {
+      document.getElementById('aruco-canvas').style.display = 'none';
+      document.getElementById('patch').style.display = 'none';
+      document.getElementById('idle').style.display = 'flex';
+    }
+
+    const context = cast.framework.CastReceiverContext.getInstance();
+    const NAMESPACE = 'urn:x-cast:com.chromarchy.calibrate';
+
+    context.addCustomMessageListener(NAMESPACE, (event) => {
+      const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+
+      switch (data.type) {
+        case 'aruco':
+          showAruco();
+          break;
+        case 'patch':
+          showPatch(data.color || '#000');
+          break;
+        case 'blank':
+          showIdle();
+          break;
+        default:
+          console.warn('Unknown message type:', data.type);
+      }
+    });
+
+    const options = new cast.framework.CastReceiverOptions();
+    options.disableIdleTimeout = true;
+    options.customNamespaces = { [NAMESPACE]: cast.framework.system.MessageType.JSON };
+    context.start(options);
+  </script>
+</body>
+</html>
