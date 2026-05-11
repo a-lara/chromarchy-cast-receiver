@@ -123,10 +123,17 @@
       }
     });
 
-    const options = new cast.framework.CastReceiverOptions();
-    options.disableIdleTimeout = true;
-    options.customNamespaces = { [NAMESPACE]: cast.framework.system.MessageType.JSON };
-    context.start(options);
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('test') === 'aruco') {
+      showAruco();
+    } else if (params.get('test') === 'patch') {
+      showPatch(params.get('color') || '#FF0000');
+    } else {
+      const options = new cast.framework.CastReceiverOptions();
+      options.disableIdleTimeout = true;
+      options.customNamespaces = { [NAMESPACE]: cast.framework.system.MessageType.JSON };
+      context.start(options);
+    }
   </script>
 </body>
 </html>
