@@ -35,12 +35,27 @@
   <script>
     'use strict';
 
-    const MARKERS = {
-      0: [[1,0,0,0,0],[1,0,1,1,1],[0,1,0,0,1],[1,0,1,1,1],[1,0,0,0,0]],
-      1: [[1,0,1,0,0],[1,0,1,1,1],[0,0,0,0,1],[1,0,1,1,1],[1,0,1,0,0]],
-      2: [[0,1,1,0,0],[0,1,0,0,0],[1,1,0,0,1],[0,1,0,0,0],[0,1,1,0,0]],
-      3: [[0,1,0,0,0],[0,1,0,0,0],[1,0,0,0,1],[0,1,0,0,0],[0,1,0,0,0]],
-    };
+    // ARUCO_MIP_36h12 codes for IDs 0..3 (must match js-aruco2 detector on the
+    // hub-side mobile app — see mobile/lib/aruco.ts). 36 bits, big-endian,
+    // row-major across a 6x6 inner grid. Bit=1 → white cell.
+    const CODES_36H12 = [
+      0xd2b63a09d, 0x6001134e5, 0x1206fbe72, 0xff8ad6cb4,
+    ];
+    const MARKER_BITS = 6;
+
+    function codeToGrid(hexCode) {
+      const bits = BigInt(hexCode).toString(2).padStart(MARKER_BITS * MARKER_BITS, '0');
+      const grid = [];
+      for (let y = 0; y < MARKER_BITS; y++) {
+        const row = [];
+        for (let x = 0; x < MARKER_BITS; x++) {
+          row.push(bits[y * MARKER_BITS + x] === '1' ? 1 : 0);
+        }
+        grid.push(row);
+      }
+      return grid;
+    }
+    const MARKER_GRIDS = CODES_36H12.map(codeToGrid);
 
     const POSITIONS = [
       { id: 0, x: 0.05, y: 0.05 },
@@ -52,18 +67,22 @@
     const MARKER_FRAC = 0.10;
 
     function drawMarker(ctx, id, cx, cy, size) {
-      const inner = MARKERS[id];
-      const cell = size / 7;
+      const grid = MARKER_GRIDS[id];
+      // 6x6 inner + 1-cell black border on each side = 8x8 total
+      const cellsTotal = MARKER_BITS + 2;
+      const cell = size / cellsTotal;
       const ox = cx - size / 2;
       const oy = cy - size / 2;
 
       ctx.fillStyle = '#000';
       ctx.fillRect(ox, oy, size, size);
 
-      for (let r = 0; r < 5; r++) {
-        for (let c = 0; c < 5; c++) {
-          ctx.fillStyle = inner[r][c] ? '#000' : '#fff';
-          ctx.fillRect(ox + (c + 1) * cell, oy + (r + 1) * cell, cell, cell);
+      ctx.fillStyle = '#fff';
+      for (let r = 0; r < MARKER_BITS; r++) {
+        for (let c = 0; c < MARKER_BITS; c++) {
+          if (grid[r][c]) {
+            ctx.fillRect(ox + (c + 1) * cell, oy + (r + 1) * cell, cell, cell);
+          }
         }
       }
     }
