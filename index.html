@@ -111,7 +111,13 @@
 
       const mSize = Math.round(W * MARKER_FRAC);
       const marginX = Math.round(W * EDGE_MARGIN_FRAC);
-      const marginY = marginX; // same pixel margin top/bottom and left/right
+      // Margin proportional to each axis — same FRACTION of each edge, not
+      // same px count. With marginY = marginX on a 16:9 canvas, 2*marker
+      // (square, sized to W) + 2*marginY exceeds H and the top/bottom
+      // markers on each side overlap vertically. Proportional inset keeps
+      // each marker the same percentage from its respective edge.
+      // Must match calibration.ts which now computes marginY = TV_H × EDGE.
+      const marginY = Math.round(H * EDGE_MARGIN_FRAC);
       const positions = [
         { id: 0, x: marginX,                 y: marginY },
         { id: 1, x: W - marginX - mSize,     y: marginY },
