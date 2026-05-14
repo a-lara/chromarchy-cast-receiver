@@ -64,7 +64,15 @@
     // that size (quads found but bit decode failed under low contrast). If
     // you change this, update CAST_MARKER_FRAC in mobile/lib/calibration.ts.
     const MARKER_FRAC = 0.20;
-    const EDGE_MARGIN_FRAC = 0.05; // distance from canvas edge, in W-fractions
+    // 0.10 (was 0.05): puts the marker's 1-cell black border ~10% of TV-width
+    // away from the TV's physical bezel. Verified end-to-end against a real
+    // hub snapshot — at 0.05 the markers' borders kept merging with the
+    // bezel's dark pixels under barrel distortion, producing oversized
+    // contours that approxPolyDP couldn't fit as quadrilaterals (typical
+    // failure: ID 0 detected as fragments only, no candidate). At 0.10 each
+    // marker has a clean white moat on all sides.
+    // KEEP IN SYNC with mobile/lib/calibration.ts CAST_EDGE_FRAC.
+    const EDGE_MARGIN_FRAC = 0.10;
 
     function drawMarker(ctx, id, cx, cy, size) {
       const grid = MARKER_GRIDS[id];
