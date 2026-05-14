@@ -57,11 +57,13 @@
     }
     const MARKER_GRIDS = CODES_36H12.map(codeToGrid);
 
-    // Marker size as a fraction of canvas WIDTH. 0.14 gives ~48px markers on
-    // a 480x320 hub snapshot — comfortably above js-aruco2's per-cell pixel
-    // threshold even with barrel distortion + JPEG compression on the
-    // hub-side camera path.
-    const MARKER_FRAC = 0.14;
+    // Marker size as a fraction of canvas WIDTH. 0.20 gives ~70px markers on
+    // a 480x320 hub snapshot — ~6 px per ARUCO_MIP_36h12 bit cell after the
+    // hub's perspective + barrel + JPEG path. Previous 0.14 yielded ~50 px
+    // markers; detection on real /tmp/hub-snap.jpg returned 0 valid IDs at
+    // that size (quads found but bit decode failed under low contrast). If
+    // you change this, update CAST_MARKER_FRAC in mobile/lib/calibration.ts.
+    const MARKER_FRAC = 0.20;
     const EDGE_MARGIN_FRAC = 0.05; // distance from canvas edge, in W-fractions
 
     function drawMarker(ctx, id, cx, cy, size) {
