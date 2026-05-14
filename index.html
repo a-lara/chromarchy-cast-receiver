@@ -57,14 +57,12 @@
     }
     const MARKER_GRIDS = CODES_36H12.map(codeToGrid);
 
-    const POSITIONS = [
-      { id: 0, x: 0.05, y: 0.05 },
-      { id: 1, x: 0.85, y: 0.05 },
-      { id: 2, x: 0.85, y: 0.773 },
-      { id: 3, x: 0.05, y: 0.773 },
-    ];
-
-    const MARKER_FRAC = 0.10;
+    // Marker size as a fraction of canvas WIDTH. 0.14 gives ~48px markers on
+    // a 480x320 hub snapshot — comfortably above js-aruco2's per-cell pixel
+    // threshold even with barrel distortion + JPEG compression on the
+    // hub-side camera path.
+    const MARKER_FRAC = 0.14;
+    const EDGE_MARGIN_FRAC = 0.05; // distance from canvas edge, in W-fractions
 
     function drawMarker(ctx, id, cx, cy, size) {
       const grid = MARKER_GRIDS[id];
@@ -102,8 +100,17 @@
       ctx.fillRect(0, 0, W, H);
 
       const mSize = Math.round(W * MARKER_FRAC);
-      for (const p of POSITIONS) {
-        drawMarker(ctx, p.id, p.x * W + mSize / 2, p.y * H + mSize / 2, mSize);
+      const marginX = Math.round(W * EDGE_MARGIN_FRAC);
+      const marginY = marginX; // same pixel margin top/bottom and left/right
+      const positions = [
+        { id: 0, x: marginX,                 y: marginY },
+        { id: 1, x: W - marginX - mSize,     y: marginY },
+        { id: 2, x: W - marginX - mSize,     y: H - marginY - mSize },
+        { id: 3, x: marginX,                 y: H - marginY - mSize },
+      ];
+
+      for (const p of positions) {
+        drawMarker(ctx, p.id, p.x + mSize / 2, p.y + mSize / 2, mSize);
       }
     }
 
